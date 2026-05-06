@@ -42,17 +42,17 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions web = FirebaseOptions(
     apiKey: 'AIzaSyAIcxy_okjQHAoac7HPIU1xmqhhLrUENFU',
-    appId: '1:650252634209:web:b329456bc4387bd64cc220',
+    appId: '1:650252634209:web:a48f1b3847f66d7e4cc220',
     messagingSenderId: '650252634209',
     projectId: 'photodukan-com',
     authDomain: 'photodukan-com.firebaseapp.com',
     storageBucket: 'photodukan-com.firebasestorage.app',
-    measurementId: 'G-19RF4GSZZB',
+    measurementId: 'G-LL51LKTEYX',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyDm9RgVoCMtq2mA24DDHkX1qb23ObB0GwU',
-    appId: '1:650252634209:android:28c40ec4d23b63e94cc220',
+    appId: '1:650252634209:android:91f3324d38f59e5c4cc220',
     messagingSenderId: '650252634209',
     projectId: 'photodukan-com',
     storageBucket: 'photodukan-com.firebasestorage.app',
@@ -60,7 +60,7 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyBrjTa4_MF4KSuSZ_Jwsska14Hmv52yQso',
-    appId: '1:650252634209:ios:1416e68ef928d4734cc220',
+    appId: '1:650252634209:ios:b263e18c1fc7d5164cc220',
     messagingSenderId: '650252634209',
     projectId: 'photodukan-com',
     storageBucket: 'photodukan-com.firebasestorage.app',
@@ -69,7 +69,7 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions macos = FirebaseOptions(
     apiKey: 'AIzaSyBrjTa4_MF4KSuSZ_Jwsska14Hmv52yQso',
-    appId: '1:650252634209:ios:1416e68ef928d4734cc220',
+    appId: '1:650252634209:ios:b263e18c1fc7d5164cc220',
     messagingSenderId: '650252634209',
     projectId: 'photodukan-com',
     storageBucket: 'photodukan-com.firebasestorage.app',
@@ -78,11 +78,12 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions windows = FirebaseOptions(
     apiKey: 'AIzaSyAIcxy_okjQHAoac7HPIU1xmqhhLrUENFU',
-    appId: '1:650252634209:web:699ba76303af83f14cc220',
+    appId: '1:650252634209:web:8adb4cf32af66e174cc220',
     messagingSenderId: '650252634209',
     projectId: 'photodukan-com',
     authDomain: 'photodukan-com.firebaseapp.com',
     storageBucket: 'photodukan-com.firebasestorage.app',
-    measurementId: 'G-9MTEXQN6XB',
+    measurementId: 'G-9XSPSYHE0L',
   );
+
 }
