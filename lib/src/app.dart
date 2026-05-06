@@ -98,7 +98,7 @@ class _SetupScreen extends StatelessWidget {
                   Text(message, style: theme.textTheme.bodyLarge),
                   const SizedBox(height: 16),
                   Text(
-                    'Run the app with --dart-define values for your Firebase project and backend API URL.',
+                    'Firebase now initializes from firebase_options.dart. Only API_BASE_URL needs runtime configuration if you want a non-default backend URL.',
                     style: theme.textTheme.bodyMedium,
                   ),
                 ],

@@ -4,7 +4,7 @@ import 'package:photodukan_app/src/app.dart';
 import 'package:photodukan_app/src/services/firebase_bootstrap.dart';
 
 void main() {
-  testWidgets('shows setup guidance when firebase is not configured', (
+  testWidgets('shows setup guidance when firebase bootstrap is not ready', (
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(
@@ -15,7 +15,7 @@ void main() {
     await tester.pump();
 
     expect(find.text('Firebase setup required'), findsOneWidget);
-    expect(find.textContaining('Missing Firebase dart-defines'), findsOneWidget);
+    expect(find.textContaining('Firebase bootstrap failed'), findsOneWidget);
   });
 }
 
@@ -24,9 +24,9 @@ class _FakeFirebaseBootstrap extends FirebaseBootstrap {
   Future<FirebaseBootstrapResult> initialize() {
     return Future.value(
       const FirebaseBootstrapResult(
-        isConfigured: false,
+        isConfigured: true,
         isReady: false,
-        message: 'Missing Firebase dart-defines.',
+        message: 'Firebase bootstrap failed.',
       ),
     );
   }

@@ -22,6 +22,15 @@ class _AuthPageState extends State<AuthPage> {
   bool _isSubmitting = false;
   String? _message;
 
+  String _describeAuthError(FirebaseAuthException error) {
+    final rawError = '${error.code} ${error.message ?? ''}'.toUpperCase();
+    if (rawError.contains('CONFIGURATION_NOT_FOUND')) {
+      return 'Firebase Auth is missing Android app verification setup for com.photodukan.app. Add the app\'s SHA-1 and SHA-256 fingerprints in Firebase console, download an updated google-services.json, and rebuild the app.';
+    }
+
+    return error.message ?? error.code;
+  }
+
   @override
   void dispose() {
     _emailController.dispose();
@@ -63,7 +72,7 @@ class _AuthPageState extends State<AuthPage> {
       });
     } on FirebaseAuthException catch (error) {
       setState(() {
-        _message = error.message ?? error.code;
+        _message = _describeAuthError(error);
       });
     } on ApiException catch (error) {
       setState(() {

@@ -1,20 +1,13 @@
 import 'package:firebase_core/firebase_core.dart';
 
-import '../config/firebase_runtime_config.dart';
+import '../../firebase_options.dart';
 
 class FirebaseBootstrap {
   Future<FirebaseBootstrapResult> initialize() async {
-    if (!FirebaseRuntimeConfig.isConfigured) {
-      return const FirebaseBootstrapResult(
-        isConfigured: false,
-        isReady: false,
-        message:
-            'Missing Firebase dart-defines. Provide FIREBASE_API_KEY, FIREBASE_APP_ID, FIREBASE_MESSAGING_SENDER_ID, and FIREBASE_PROJECT_ID.',
-      );
-    }
-
     try {
-      await Firebase.initializeApp(options: FirebaseRuntimeConfig.options);
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
       return const FirebaseBootstrapResult(
         isConfigured: true,
         isReady: true,
@@ -25,6 +18,12 @@ class FirebaseBootstrap {
         isConfigured: true,
         isReady: false,
         message: 'Firebase initialization failed: ${error.message ?? error.code}',
+      );
+    } on UnsupportedError catch (error) {
+      return FirebaseBootstrapResult(
+        isConfigured: true,
+        isReady: false,
+        message: error.message ?? 'Firebase is not configured for this platform.',
       );
     }
   }

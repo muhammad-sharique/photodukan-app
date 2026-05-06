@@ -4,26 +4,32 @@ Flutter client for PhotoDukan. The app uses Firebase Auth for email/password sig
 
 ## What is implemented
 
-- Firebase runtime bootstrap through `--dart-define` values instead of committing platform secrets.
+- Firebase runtime bootstrap through the generated `lib/firebase_options.dart` file.
 - Email/password sign-in and registration with `firebase_auth`.
 - Backend user sync call to `POST /auth/sync` after sign-in or registration.
-- A fallback setup screen when Firebase config values are missing.
+- A fallback setup screen when Firebase cannot initialize for the current platform.
 
 ## Required setup
 
 1. Create a Firebase project and enable Email/Password under Authentication.
-2. Add Android, iOS, and web apps in Firebase as needed.
-3. Run the app with your Firebase settings:
+2. Register the Android app with package name `com.photodukan.app` in Firebase project settings.
+3. Add your Android signing fingerprints for that app before testing email/password auth.
+
+	Debug keystore fingerprints on this machine:
+
+	- SHA-1: `C5:8B:DF:B6:18:3E:AD:ED:E1:1E:C1:50:A5:39:0A:51:1A:12:F4:31`
+	- SHA-256: `48:3B:4B:EC:FC:07:03:E4:25:96:54:1D:DE:F9:DD:AD:2C:2C:F0:EA:7F:85:84:39:77:C8:1D:FB:7B:42:0B:29`
+
+4. Download a fresh `android/app/google-services.json` after adding fingerprints.
+5. Generate `lib/firebase_options.dart` with FlutterFire CLI for your project and platforms.
+6. Run the app with your backend URL:
 
 ```bash
-flutter run \
-	--dart-define=FIREBASE_API_KEY=your-api-key \
-	--dart-define=FIREBASE_APP_ID=your-app-id \
-	--dart-define=FIREBASE_MESSAGING_SENDER_ID=your-sender-id \
-	--dart-define=FIREBASE_PROJECT_ID=your-project-id \
-	--dart-define=FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com \
-	--dart-define=API_BASE_URL=http://10.0.2.2:3000
+flutter run --dart-define=API_BASE_URL=http://10.0.2.2:3000
 ```
 
-4. Use `http://localhost:3000` instead of `10.0.2.2` when running on web or desktop.
-5. Point the app to the backend from the server repo before testing sign-in.
+7. You can also load that value from a file with `--dart-define-from-file=.env`.
+8. Use `http://localhost:3000` on web or desktop, and your machine's LAN IP on a physical Android device.
+9. Point the app to the backend from the server repo before testing sign-in.
+
+If Android sign-up or sign-in fails with `CONFIGURATION_NOT_FOUND` or reCAPTCHA-related internal errors, the package name and SHA fingerprints in Firebase do not match the app build you are running.
