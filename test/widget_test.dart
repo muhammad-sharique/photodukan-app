@@ -14,7 +14,7 @@ void main() {
     );
     await tester.pump();
 
-    expect(find.text('Firebase setup required'), findsOneWidget);
+    expect(find.text('Setup needed'), findsOneWidget);
     expect(find.textContaining('Firebase bootstrap failed'), findsOneWidget);
   });
 }

@@ -19,6 +19,9 @@ class PhotoDukanApp extends StatefulWidget {
 class _PhotoDukanAppState extends State<PhotoDukanApp> {
   late final Future<FirebaseBootstrapResult> _bootstrapFuture =
       (widget._bootstrap ?? FirebaseBootstrap()).initialize();
+  late final AuthRepository _authRepository = AuthRepository(
+    apiClient: ApiClient(baseUrl: FirebaseRuntimeConfig.apiBaseUrl),
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -45,11 +48,7 @@ class _PhotoDukanAppState extends State<PhotoDukanApp> {
             return _SetupScreen(message: result.message);
           }
 
-          return AuthPage(
-            authRepository: AuthRepository(
-              apiClient: ApiClient(baseUrl: FirebaseRuntimeConfig.apiBaseUrl),
-            ),
-          );
+          return AuthPage(authRepository: _authRepository);
         },
       ),
     );
@@ -76,32 +75,36 @@ class _SetupScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Scaffold(
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 560),
-          child: Card(
-            margin: const EdgeInsets.all(24),
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Firebase setup required',
-                    style: theme.textTheme.headlineSmall,
-                  ),
-                  const SizedBox(height: 12),
-                  Text(message, style: theme.textTheme.bodyLarge),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Firebase now initializes from firebase_options.dart. Only API_BASE_URL needs runtime configuration if you want a non-default backend URL.',
-                    style: theme.textTheme.bodyMedium,
-                  ),
-                ],
+      body: DecoratedBox(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFFF6EFE6), Color(0xFFE8D2BA)],
+          ),
+        ),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 560),
+            child: Card(
+              margin: const EdgeInsets.all(24),
+              elevation: 0,
+              color: Colors.white.withValues(alpha: 0.92),
+              child: Padding(
+                padding: const EdgeInsets.all(28),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Setup needed',
+                      style: Theme.of(context).textTheme.headlineSmall,
+                    ),
+                    const SizedBox(height: 12),
+                    Text(message, style: Theme.of(context).textTheme.bodyLarge),
+                  ],
+                ),
               ),
             ),
           ),
