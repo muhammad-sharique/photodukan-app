@@ -176,6 +176,26 @@ class AuthRepository {
     await _syncSignedInUser(user, phoneNumber: user.phoneNumber);
   }
 
+  Future<String> getIdToken({bool forceRefresh = false}) async {
+    final user = _firebaseAuth.currentUser;
+    if (user == null) {
+      throw FirebaseAuthException(
+        code: 'user-not-found',
+        message: 'No user session available.',
+      );
+    }
+
+    final idToken = await user.getIdToken(forceRefresh);
+    if (idToken == null || idToken.isEmpty) {
+      throw FirebaseAuthException(
+        code: 'missing-id-token',
+        message: 'Failed to acquire a Firebase ID token.',
+      );
+    }
+
+    return idToken;
+  }
+
   Future<void> signOut() async {
     _log('signOut start currentUid=${_firebaseAuth.currentUser?.uid}');
     if (!kIsWeb) {

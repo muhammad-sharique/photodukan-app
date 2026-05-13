@@ -138,67 +138,55 @@ class _AuthPageState extends State<AuthPage> {
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<User?>(
-      stream: widget.authRepository.authStateChanges(),
-      builder: (context, snapshot) {
-        final user = snapshot.data;
-
-        return Scaffold(
-          body: DecoratedBox(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [Color(0xFFF8F1E8), Color(0xFFE5C39C)],
+    return Scaffold(
+      body: DecoratedBox(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFFF8F1E8), Color(0xFFE5C39C)],
+          ),
+        ),
+        child: Stack(
+          children: [
+            Positioned(
+              top: -80,
+              right: -40,
+              child: Container(
+                width: 220,
+                height: 220,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFF6ED).withValues(alpha: 0.55),
+                  shape: BoxShape.circle,
+                ),
               ),
             ),
-            child: Stack(
-              children: [
-                Positioned(
-                  top: -80,
-                  right: -40,
-                  child: Container(
-                    width: 220,
-                    height: 220,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFFF6ED).withValues(alpha: 0.55),
-                      shape: BoxShape.circle,
-                    ),
-                  ),
+            Positioned(
+              bottom: -120,
+              left: -70,
+              child: Container(
+                width: 260,
+                height: 260,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFD78E58).withValues(alpha: 0.15),
+                  shape: BoxShape.circle,
                 ),
-                Positioned(
-                  bottom: -120,
-                  left: -70,
-                  child: Container(
-                    width: 260,
-                    height: 260,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFD78E58).withValues(alpha: 0.15),
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                ),
-                SafeArea(
-                  child: Center(
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 520),
-                      child: SingleChildScrollView(
-                        padding: const EdgeInsets.all(24),
-                        child: user == null
-                            ? _buildAuthCard(context)
-                            : _SignedInCard(
-                                user: user,
-                                onSignOut: widget.authRepository.signOut,
-                              ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
+              ),
             ),
-          ),
-        );
-      },
+            SafeArea(
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 520),
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(24),
+                    child: _buildAuthCard(context),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -330,72 +318,6 @@ class _AuthPageState extends State<AuthPage> {
           ),
         ),
       ],
-    );
-  }
-}
-
-class _SignedInCard extends StatelessWidget {
-  const _SignedInCard({required this.user, required this.onSignOut});
-
-  final User user;
-  final Future<void> Function() onSignOut;
-
-  @override
-  Widget build(BuildContext context) {
-    final label = user.displayName ?? user.phoneNumber ?? user.email ?? 'Ready';
-    final avatarText = label.isEmpty ? 'P' : label.substring(0, 1).toUpperCase();
-
-    return Card(
-      elevation: 0,
-      color: Colors.white.withValues(alpha: 0.94),
-      child: Padding(
-        padding: const EdgeInsets.all(28),
-        child: Column(
-          children: [
-            CircleAvatar(
-              radius: 38,
-              backgroundColor: const Color(0xFFB85C38),
-              backgroundImage: user.photoURL == null ? null : NetworkImage(user.photoURL!),
-              child: user.photoURL == null
-                  ? Text(
-                      avatarText,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 24,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    )
-                  : null,
-            ),
-            const SizedBox(height: 18),
-            Text(
-              'You are in',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              label,
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                color: const Color(0xFF6A5545),
-              ),
-            ),
-            const SizedBox(height: 24),
-            FilledButton.tonal(
-              onPressed: onSignOut,
-              style: FilledButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(18),
-                ),
-              ),
-              child: const Text('Sign out'),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

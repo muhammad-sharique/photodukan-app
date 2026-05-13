@@ -26,6 +26,10 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>PhotoDukan needs photo library access so you can upload product images for AI generation.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>PhotoDukan needs camera access so you can capture product images for AI generation.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

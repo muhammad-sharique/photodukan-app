@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 import 'config/firebase_runtime_config.dart';
 import 'services/api_client.dart';
 import 'services/auth_repository.dart';
 import 'services/firebase_bootstrap.dart';
 import 'ui/auth_page.dart';
+import 'ui/signed_in_shell.dart';
 
 class PhotoDukanApp extends StatefulWidget {
   const PhotoDukanApp({super.key, FirebaseBootstrap? bootstrap})
@@ -19,9 +21,8 @@ class PhotoDukanApp extends StatefulWidget {
 class _PhotoDukanAppState extends State<PhotoDukanApp> {
   late final Future<FirebaseBootstrapResult> _bootstrapFuture =
       (widget._bootstrap ?? FirebaseBootstrap()).initialize();
-  late final AuthRepository _authRepository = AuthRepository(
-    apiClient: ApiClient(baseUrl: FirebaseRuntimeConfig.apiBaseUrl),
-  );
+  late final ApiClient _apiClient = ApiClient(baseUrl: FirebaseRuntimeConfig.apiBaseUrl);
+  late final AuthRepository _authRepository = AuthRepository(apiClient: _apiClient);
 
   @override
   Widget build(BuildContext context) {
@@ -48,7 +49,23 @@ class _PhotoDukanAppState extends State<PhotoDukanApp> {
             return _SetupScreen(message: result.message);
           }
 
-          return AuthPage(authRepository: _authRepository);
+          return StreamBuilder<User?>(
+            stream: _authRepository.authStateChanges(),
+            builder: (context, authSnapshot) {
+              if (authSnapshot.connectionState == ConnectionState.waiting) {
+                return const _LoadingScreen();
+              }
+
+              if (authSnapshot.data == null) {
+                return AuthPage(authRepository: _authRepository);
+              }
+
+              return SignedInShellPage(
+                authRepository: _authRepository,
+                apiClient: _apiClient,
+              );
+            },
+          );
         },
       ),
     );
