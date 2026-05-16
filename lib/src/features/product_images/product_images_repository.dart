@@ -44,6 +44,58 @@ class ProductImagesRepository {
     }).toList();
   }
 
+  Future<CreditSummary> fetchCredits() async {
+    final response = await _apiClient.getJsonAuthorized(
+      '/product-images/credits',
+      idToken: await _loadIdToken(),
+    );
+
+    return CreditSummary.fromMap(response['data'] as Map<String, dynamic>);
+  }
+
+  Future<List<ProductSummary>> listProducts() async {
+    final response = await _apiClient.getJsonAuthorized(
+      '/product-images/products',
+      idToken: await _loadIdToken(),
+    );
+
+    final items = response['data'] as List<dynamic>? ?? const [];
+    return items
+        .whereType<Map<String, dynamic>>()
+        .map(ProductSummary.fromMap)
+        .toList();
+  }
+
+  Future<ProductDetail> getProduct(int productId) async {
+    final response = await _apiClient.getJsonAuthorized(
+      '/product-images/products/$productId',
+      idToken: await _loadIdToken(),
+    );
+
+    return ProductDetail.fromMap(response['data'] as Map<String, dynamic>);
+  }
+
+  Future<ProductDetail> createProductFromUpload(XFile file, {String? name}) async {
+    final upload = await _prepareUpload(file);
+    final response = await _apiClient.postMultipartAuthorized(
+      '/product-images/products',
+      idToken: await _loadIdToken(),
+      fields: {
+        if (name != null && name.trim().isNotEmpty) 'name': name.trim(),
+      },
+      files: [
+        ApiMultipartFile(
+          fieldName: 'image',
+          filename: upload.filename,
+          bytes: upload.bytes,
+          contentType: upload.contentType,
+        ),
+      ],
+    );
+
+    return ProductDetail.fromMap(response['data'] as Map<String, dynamic>);
+  }
+
   Future<ProductImageAsset> uploadAsset(XFile file) async {
     final upload = await _prepareUpload(file);
     final response = await _apiClient.postMultipartAuthorized(
@@ -64,27 +116,41 @@ class ProductImagesRepository {
 
   Future<ProductImageGeneration> generateImage({
     required int assetId,
+    int? productId,
     required String style,
   }) async {
+    final payload = <String, dynamic>{
+      'assetId': assetId,
+      'style': style,
+    };
+    if (productId != null) {
+      payload['productId'] = productId;
+    }
+
     final response = await _apiClient.postJsonAuthorized(
       '/product-images/generations',
       idToken: await _loadIdToken(),
-      payload: {
-        'assetId': assetId,
-        'style': style,
-      },
+      payload: payload,
     );
 
     return ProductImageGeneration.fromMap(response['data'] as Map<String, dynamic>);
   }
 
-  Future<List<ProductImageGeneration>> listRecentGenerations({int limit = 10}) async {
+  Future<List<ProductImageGeneration>> listRecentGenerations({
+    int limit = 10,
+    int? productId,
+  }) async {
+    final queryParameters = <String, String>{
+      'limit': '$limit',
+    };
+    if (productId != null) {
+      queryParameters['productId'] = '$productId';
+    }
+
     final response = await _apiClient.getJsonAuthorized(
       '/product-images/generations',
       idToken: await _loadIdToken(),
-      queryParameters: {
-        'limit': '$limit',
-      },
+      queryParameters: queryParameters,
     );
 
     final items = response['data'] as List<dynamic>? ?? const [];

@@ -40,85 +40,76 @@ class ProductImagesScreen extends StatelessWidget {
       builder: (context, child) {
         final canGenerate = controller.canGenerate;
         final primaryLabel = controller.selectedAsset == null
-            ? (controller.isUploading ? 'Uploading photo...' : 'Choose product photo')
+            ? (controller.isUploading ? 'Creating product...' : 'Choose product photo')
             : (controller.isGenerating ? 'Generating image...' : 'Generate style');
 
-        return DecoratedBox(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [Color(0xFFF8F1E8), Color(0xFFF1E0CA), Color(0xFFE8D2BA)],
-            ),
+        return Scaffold(
+          appBar: _ProductEditorAppBar(
+            controller: controller,
+            currentUser: currentUser,
+            onSignOut: onSignOut,
           ),
-          child: SafeArea(
-            child: Column(
-              children: [
-                Expanded(
-                  child: ListView(
-                    padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
-                    children: [
-                      _HeaderCard(
-                        currentUser: currentUser,
-                        onSignOut: onSignOut,
-                      ),
+          body: Column(
+            children: [
+              Expanded(
+                child: ListView(
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+                  children: [
+                    _HeroCard(controller: controller),
+                    if (controller.errorMessage != null) ...[
                       const SizedBox(height: 16),
-                      _HeroCard(controller: controller),
-                      if (controller.errorMessage != null) ...[
-                        const SizedBox(height: 16),
-                        _ErrorCard(message: controller.errorMessage!),
-                      ],
-                      const SizedBox(height: 16),
-                      _PhotoSection(controller: controller),
-                      const SizedBox(height: 16),
-                      _StyleSection(controller: controller),
-                      const SizedBox(height: 16),
-                      _ResultSection(controller: controller),
-                      if (controller.recentGenerations.isNotEmpty) ...[
-                        const SizedBox(height: 16),
-                        _RecentSection(controller: controller),
-                      ],
+                      _ErrorCard(message: controller.errorMessage!),
                     ],
-                  ),
+                    const SizedBox(height: 16),
+                    _PhotoSection(controller: controller),
+                    const SizedBox(height: 16),
+                    _StyleSection(controller: controller),
+                    const SizedBox(height: 16),
+                    _ResultSection(controller: controller),
+                    if (controller.recentGenerations.isNotEmpty) ...[
+                      const SizedBox(height: 16),
+                      _RecentSection(controller: controller),
+                    ],
+                  ],
                 ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
-                  child: SizedBox(
-                    width: double.infinity,
-                    child: FilledButton.icon(
-                      onPressed: controller.isBusy
-                          ? null
-                          : controller.selectedAsset == null
-                            ? () => _pickProductPhoto(context, controller)
-                              : (canGenerate ? controller.generateCurrentStyle : null),
-                      style: FilledButton.styleFrom(
-                        backgroundColor: const Color(0xFF1F1A17),
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 18),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(22),
-                        ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    onPressed: controller.isBusy
+                        ? null
+                        : controller.selectedAsset == null
+                          ? () => _pickProductPhoto(context, controller)
+                            : (canGenerate ? controller.generateCurrentStyle : null),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: const Color(0xFF1F1A17),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 18),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(22),
                       ),
-                      icon: controller.isBusy
-                          ? const SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
-                              ),
-                            )
-                          : Icon(
-                              controller.selectedAsset == null
-                                  ? Icons.photo_library_rounded
-                                  : Icons.auto_awesome_rounded,
-                            ),
-                      label: Text(primaryLabel),
                     ),
+                    icon: controller.isBusy
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : Icon(
+                            controller.selectedAsset == null
+                                ? Icons.photo_library_rounded
+                                : Icons.auto_awesome_rounded,
+                          ),
+                    label: Text(primaryLabel),
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         );
       },
@@ -126,64 +117,84 @@ class ProductImagesScreen extends StatelessWidget {
   }
 }
 
-class _HeaderCard extends StatelessWidget {
-  const _HeaderCard({required this.currentUser, required this.onSignOut});
+class _ProductEditorAppBar extends StatelessWidget implements PreferredSizeWidget {
+  const _ProductEditorAppBar({
+    required this.controller,
+    required this.currentUser,
+    required this.onSignOut,
+  });
 
+  final ProductImagesController controller;
   final User? currentUser;
   final Future<void> Function() onSignOut;
 
   @override
+  Size get preferredSize => const Size.fromHeight(kToolbarHeight + 10);
+
+  @override
   Widget build(BuildContext context) {
     final label = currentUser?.displayName ?? currentUser?.email ?? 'PhotoDukan';
+    final credits = controller.credits?.balance;
+    final title = controller.currentProduct?.name ?? 'Product';
 
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.88),
-        borderRadius: BorderRadius.circular(28),
-      ),
-      child: Row(
+    return AppBar(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      surfaceTintColor: Colors.transparent,
+      scrolledUnderElevation: 0,
+      titleSpacing: 20,
+      title: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            width: 52,
-            height: 52,
-            decoration: BoxDecoration(
-              color: const Color(0xFFB85C38),
-              borderRadius: BorderRadius.circular(18),
-            ),
-            child: const Icon(Icons.auto_awesome, color: Colors.white),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Product Images',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  label,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: const Color(0xFF6A5545),
-                  ),
-                ),
-              ],
+          Text(
+            title,
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.w700,
             ),
           ),
-          IconButton.filledTonal(
-            onPressed: onSignOut,
-            style: IconButton.styleFrom(
-              backgroundColor: const Color(0xFFF1E0CA),
-              foregroundColor: const Color(0xFF5C4635),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: const Color(0xFF6A5545),
             ),
-            icon: const Icon(Icons.logout_rounded),
           ),
         ],
       ),
+      actions: [
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          child: Center(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF5EBDD),
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: Text(
+                credits == null ? 'Credits' : '$credits left',
+                style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFF5C4635),
+                ),
+              ),
+            ),
+          ),
+        ),
+        PopupMenuButton<String>(
+          onSelected: (value) {
+            if (value == 'logout') {
+              onSignOut();
+            }
+          },
+          itemBuilder: (context) => const [
+            PopupMenuItem<String>(
+              value: 'logout',
+              child: Text('Logout'),
+            ),
+          ],
+        ),
+      ],
     );
   }
 }
@@ -195,58 +206,122 @@ class _HeroCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(30),
-        gradient: const LinearGradient(
-          colors: [Color(0xFF4B3328), Color(0xFF8D4E2D)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.14),
-              borderRadius: BorderRadius.circular(999),
-            ),
-            child: const Text(
-              'Upload once, try multiple looks',
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w600,
+    final productName = controller.currentProduct?.name;
+    final isWorking = controller.isUploading || controller.isGenerating;
+    final title = productName ?? 'Premium Background';
+    final subtitle = productName == null
+        ? 'Choose a product photo, pick a style, and generate a marketplace-ready result.'
+        : 'Use Premium Background to create a new marketplace-ready version of this product.';
+
+    return Card(
+      elevation: 0,
+      color: Colors.white.withValues(alpha: 0.92),
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF5EBDD),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: const Icon(
+                  Icons.auto_awesome_rounded,
+                  color: Color(0xFF5C4635),
+                ),
+              ),
+              title: Text(
+                title,
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              subtitle: Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text(
+                  subtitle,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: const Color(0xFF6A5545),
+                    height: 1.35,
+                  ),
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Create polished product visuals without filling in product details.',
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-              color: Colors.white,
-              fontWeight: FontWeight.w700,
-              height: 1.15,
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                _SummaryChip(
+                  icon: Icons.tune_rounded,
+                  label: 'Premium Background',
+                ),
+                _SummaryChip(
+                  icon: Icons.palette_outlined,
+                  label: '${controller.styles.length} styles',
+                ),
+                const _SummaryChip(
+                  icon: Icons.account_balance_wallet_outlined,
+                  label: '1 credit / render',
+                ),
+              ],
             ),
-          ),
-          const SizedBox(height: 10),
-          Text(
-            'Pick a product photo, choose a visual style, and generate a fresh AI image directly.',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: const Color(0xFFF8EDE4),
-              height: 1.45,
-            ),
-          ),
-          if (controller.isUploading || controller.isGenerating) ...[
-            const SizedBox(height: 16),
-            const LinearProgressIndicator(
-              minHeight: 6,
-              backgroundColor: Color(0x66FFFFFF),
-              color: Colors.white,
-            ),
+            if (isWorking) ...[
+              const SizedBox(height: 16),
+              LinearProgressIndicator(
+                minHeight: 4,
+                borderRadius: BorderRadius.circular(999),
+                backgroundColor: const Color(0xFFF0E3D5),
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                controller.isUploading
+                    ? 'Creating product and preparing the source image.'
+                    : 'Generating the selected background style.',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: const Color(0xFF6A5545),
+                ),
+              ),
+            ],
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SummaryChip extends StatelessWidget {
+  const _SummaryChip({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF7EFE6),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 18, color: const Color(0xFF5C4635)),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: Theme.of(context).textTheme.labelLarge?.copyWith(
+              color: const Color(0xFF5C4635),
+              fontWeight: FontWeight.w600,
+            ),
+          ),
         ],
       ),
     );
@@ -294,18 +369,16 @@ class _PhotoSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final asset = controller.selectedAsset;
+    final productName = controller.currentProduct?.name;
 
     return _SectionCard(
       title: '1. Product photo',
       subtitle: asset == null
           ? 'Choose a clean product image from your gallery or camera.'
-          : 'This source photo stays available while you try different styles.',
-      action: asset == null
-          ? null
-          : TextButton(
-            onPressed: controller.isBusy ? null : () => _showPhotoSourcePicker(context),
-              child: const Text('Change photo'),
-            ),
+          : productName == null
+              ? 'This source photo stays available while you try different styles.'
+              : 'Original photo for $productName. You can generate multiple looks from this same product.',
+      action: null,
       child: asset == null
           ? OutlinedButton.icon(
             onPressed: controller.isBusy ? null : () => _showPhotoSourcePicker(context),
@@ -475,9 +548,9 @@ class _StyleSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return _SectionCard(
       title: '2. Visual style',
-      subtitle: 'Each style keeps the product intact and changes only the presentation.',
+      subtitle: 'Premium Background keeps the product intact and changes only the presentation.',
       child: SizedBox(
-        height: 146,
+        height: 230,
         child: ListView.separated(
           scrollDirection: Axis.horizontal,
           itemCount: controller.styles.length,
@@ -490,7 +563,7 @@ class _StyleSection extends StatelessWidget {
               onTap: () => controller.selectStyle(style.key),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 180),
-                width: 190,
+                width: 206,
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: isSelected ? const Color(0xFF5C3B2E) : const Color(0xFFF7EFE6),
@@ -511,8 +584,10 @@ class _StyleSection extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    _StylePreview(styleKey: style.key, isSelected: isSelected),
+                    const SizedBox(height: 12),
                     Text(
-                      style.key[0].toUpperCase() + style.key.substring(1),
+                      style.label,
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w700,
                         color: isSelected ? Colors.white : const Color(0xFF3E2B22),
@@ -764,6 +839,77 @@ class _ImagePanel extends StatelessWidget {
                 imageUrl,
                 headers: headers,
                 fit: BoxFit.cover,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StylePreview extends StatelessWidget {
+  const _StylePreview({required this.styleKey, required this.isSelected});
+
+  final String styleKey;
+  final bool isSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final config = switch (styleKey) {
+      'professional' => (top: const Color(0xFFEFE2D4), bottom: const Color(0xFFF9F5EF), accent: const Color(0xFFBCA18B)),
+      'lifestyle' => (top: const Color(0xFFD8C5B1), bottom: const Color(0xFFF2E2D2), accent: const Color(0xFF8D5E3C)),
+      'minimal' => (top: const Color(0xFFF4F1EC), bottom: const Color(0xFFE8DED0), accent: const Color(0xFFA18D7D)),
+      'studio' => (top: const Color(0xFFE7D4C1), bottom: const Color(0xFFF9F3EC), accent: const Color(0xFFB67A4F)),
+      'creative' => (top: const Color(0xFFD8C2BA), bottom: const Color(0xFFF0E6DB), accent: const Color(0xFF714A3A)),
+      'luxury' => (top: const Color(0xFFD3C2A8), bottom: const Color(0xFFF1E3CB), accent: const Color(0xFF8B623B)),
+      _ => (top: const Color(0xFFEFE2D4), bottom: const Color(0xFFF9F5EF), accent: const Color(0xFFBCA18B)),
+    };
+
+    return Container(
+      height: 88,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(18),
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [config.top, config.bottom],
+        ),
+      ),
+      child: Stack(
+        children: [
+          Positioned(
+            left: 16,
+            right: 16,
+            bottom: 12,
+            child: Container(
+              height: 12,
+              decoration: BoxDecoration(
+                color: config.accent.withValues(alpha: 0.22),
+                borderRadius: BorderRadius.circular(999),
+              ),
+            ),
+          ),
+          Align(
+            child: Container(
+              width: 44,
+              height: 52,
+              decoration: BoxDecoration(
+                color: isSelected ? Colors.white : const Color(0xFFFFFBF7),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: config.accent.withValues(alpha: 0.4),
+                ),
+              ),
+              child: Icon(
+                styleKey == 'lifestyle'
+                    ? Icons.chair_rounded
+                    : styleKey == 'creative'
+                        ? Icons.auto_awesome_rounded
+                        : styleKey == 'luxury'
+                            ? Icons.workspace_premium_rounded
+                            : Icons.photo_camera_back_rounded,
+                color: config.accent,
               ),
             ),
           ),

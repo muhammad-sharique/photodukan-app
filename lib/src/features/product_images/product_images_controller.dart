@@ -20,11 +20,15 @@ class ProductImagesController extends ChangeNotifier {
   bool _isInitializing = false;
   bool _isUploading = false;
   bool _isGenerating = false;
+  bool _isLoadingProduct = false;
   String? _errorMessage;
   ProductImageAsset? _selectedAsset;
   ProductImageGeneration? _currentGeneration;
   List<ProductImageGeneration> _recentGenerations = const [];
   List<ProductImageStyleOption> _styles = const [];
+  List<ProductSummary> _products = const [];
+  CreditSummary? _credits;
+  ProductDetail? _currentProduct;
   String? _selectedStyle;
   Map<String, String> _imageHeaders = const {};
   bool _didInitialize = false;
@@ -32,12 +36,16 @@ class ProductImagesController extends ChangeNotifier {
   bool get isInitializing => _isInitializing;
   bool get isUploading => _isUploading;
   bool get isGenerating => _isGenerating;
-  bool get isBusy => _isInitializing || _isUploading || _isGenerating;
+  bool get isLoadingProduct => _isLoadingProduct;
+  bool get isBusy => _isInitializing || _isUploading || _isGenerating || _isLoadingProduct;
   String? get errorMessage => _errorMessage;
   ProductImageAsset? get selectedAsset => _selectedAsset;
   ProductImageGeneration? get currentGeneration => _currentGeneration;
   List<ProductImageGeneration> get recentGenerations => _recentGenerations;
   List<ProductImageStyleOption> get styles => _styles;
+  List<ProductSummary> get products => _products;
+  CreditSummary? get credits => _credits;
+  ProductDetail? get currentProduct => _currentProduct;
   String? get selectedStyle => _selectedStyle;
   Map<String, String> get imageHeaders => _imageHeaders;
 
@@ -61,11 +69,8 @@ class ProductImagesController extends ChangeNotifier {
     try {
       _styles = await _repository.fetchStyles();
       _selectedStyle = _styles.isNotEmpty ? _styles.first.key : null;
-      _recentGenerations = await _repository.listRecentGenerations(limit: 8);
       _imageHeaders = await _repository.buildImageHeaders();
-      if (_currentGeneration == null && _recentGenerations.isNotEmpty) {
-        _currentGeneration = _recentGenerations.first;
-      }
+      await refreshOverview();
     } catch (error) {
       _log('initialize failed error=$error');
       _errorMessage = _describeError(error);
@@ -75,11 +80,31 @@ class ProductImagesController extends ChangeNotifier {
     }
   }
 
+  Future<void> refreshOverview() async {
+    try {
+      _credits = await _repository.fetchCredits();
+      _products = await _repository.listProducts();
+      if (_currentProduct != null) {
+        final detail = await _repository.getProduct(_currentProduct!.id);
+        _applyProduct(detail);
+      } else {
+        _recentGenerations = await _repository.listRecentGenerations(limit: 8);
+        if (_currentGeneration == null && _recentGenerations.isNotEmpty) {
+          _currentGeneration = _recentGenerations.first;
+        }
+      }
+      _errorMessage = null;
+    } catch (error) {
+      _log('refreshOverview failed error=$error');
+      _errorMessage = _describeError(error);
+    }
+  }
+
   Future<void> pickAndUploadPhoto() async {
     await pickAndUploadPhotoFrom(ImageSource.gallery);
   }
 
-  Future<void> pickAndUploadPhotoFrom(ImageSource source) async {
+  Future<ProductDetail?> pickAndUploadPhotoFrom(ImageSource source) async {
     _errorMessage = null;
     notifyListeners();
 
@@ -90,17 +115,17 @@ class ProductImagesController extends ChangeNotifier {
     );
 
     if (file == null) {
-      return;
+      return null;
     }
 
     _isUploading = true;
     notifyListeners();
 
     try {
-      _selectedAsset = await _repository.uploadAsset(file);
-      _currentGeneration = null;
-      _imageHeaders = await _repository.buildImageHeaders();
-      _recentGenerations = await _repository.listRecentGenerations(limit: 8);
+      final product = await _repository.createProductFromUpload(file);
+      _applyProduct(product);
+      await refreshOverview();
+      return product;
     } catch (error) {
       _log('pickAndUploadPhotoFrom failed error=$error');
       _errorMessage = _describeError(error);
@@ -108,6 +133,33 @@ class ProductImagesController extends ChangeNotifier {
       _isUploading = false;
       notifyListeners();
     }
+
+    return null;
+  }
+
+  Future<void> openProduct(int productId) async {
+    _isLoadingProduct = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final product = await _repository.getProduct(productId);
+      _applyProduct(product);
+    } catch (error) {
+      _log('openProduct failed error=$error');
+      _errorMessage = _describeError(error);
+    } finally {
+      _isLoadingProduct = false;
+      notifyListeners();
+    }
+  }
+
+  void clearCurrentProduct() {
+    _currentProduct = null;
+    _selectedAsset = null;
+    _currentGeneration = null;
+    _recentGenerations = const [];
+    notifyListeners();
   }
 
   void selectStyle(String style) {
@@ -127,10 +179,18 @@ class ProductImagesController extends ChangeNotifier {
     try {
       _currentGeneration = await _repository.generateImage(
         assetId: _selectedAsset!.id,
+        productId: _currentProduct?.id,
         style: _selectedStyle!,
       );
       _imageHeaders = await _repository.buildImageHeaders();
-      _recentGenerations = await _repository.listRecentGenerations(limit: 8);
+      if (_currentProduct != null) {
+        final product = await _repository.getProduct(_currentProduct!.id);
+        _applyProduct(product);
+      } else {
+        _recentGenerations = await _repository.listRecentGenerations(limit: 8);
+      }
+      _credits = await _repository.fetchCredits();
+      _products = await _repository.listProducts();
     } catch (error) {
       _log('generateCurrentStyle failed error=$error');
       _errorMessage = _describeError(error);
@@ -142,6 +202,17 @@ class ProductImagesController extends ChangeNotifier {
 
   String resolveImageUrl(String relativePath) {
     return _repository.resolveImageUrl(relativePath);
+  }
+
+  void _applyProduct(ProductDetail product) {
+    _currentProduct = product;
+    _selectedAsset = product.assets.isNotEmpty
+        ? product.assets.first
+        : product.latestAsset;
+    _recentGenerations = product.generations.take(8).toList();
+    _currentGeneration = _recentGenerations.isNotEmpty
+        ? _recentGenerations.first
+        : product.latestGeneration;
   }
 
   String _describeError(Object error) {

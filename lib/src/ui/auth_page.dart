@@ -37,6 +37,17 @@ class _AuthPageState extends State<AuthPage> {
     };
   }
 
+  bool get _supportsAppleSignIn {
+    if (kIsWeb) {
+      return false;
+    }
+
+    return switch (defaultTargetPlatform) {
+      TargetPlatform.iOS || TargetPlatform.macOS => true,
+      _ => false,
+    };
+  }
+
   @override
   void initState() {
     super.initState();
@@ -82,6 +93,29 @@ class _AuthPageState extends State<AuthPage> {
       _setMessage('Signed in.');
     } catch (error) {
       _log('_signInWithGoogle failed error=$error');
+      _setMessage(_describeError(error));
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isWorking = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _signInWithApple() async {
+    _log('_signInWithApple pressed');
+    setState(() {
+      _isWorking = true;
+      _message = null;
+    });
+
+    try {
+      await widget.authRepository.signInWithApple();
+      _log('_signInWithApple completed successfully');
+      _setMessage('Signed in.');
+    } catch (error) {
+      _log('_signInWithApple failed error=$error');
       _setMessage(_describeError(error));
     } finally {
       if (mounted) {
@@ -226,7 +260,7 @@ class _AuthPageState extends State<AuthPage> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Continue with Google.',
+                        _supportsAppleSignIn ? 'Continue with Google or Apple.' : 'Continue with Google.',
                         style: theme.textTheme.bodyMedium?.copyWith(
                           color: const Color(0xFF6A5545),
                         ),
@@ -317,6 +351,22 @@ class _AuthPageState extends State<AuthPage> {
             ],
           ),
         ),
+        if (_supportsAppleSignIn) ...[
+          const SizedBox(height: 12),
+          OutlinedButton.icon(
+            onPressed: _isWorking ? null : _signInWithApple,
+            style: OutlinedButton.styleFrom(
+              foregroundColor: const Color(0xFF1F1A17),
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              side: const BorderSide(color: Color(0xFFD0B297)),
+            ),
+            icon: const Icon(Icons.apple_rounded),
+            label: Text(_isWorking ? 'Working...' : 'Continue with Apple'),
+          ),
+        ],
       ],
     );
   }

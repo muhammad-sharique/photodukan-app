@@ -39,6 +39,27 @@ class AuthRepository {
   Stream<User?> authStateChanges() => _firebaseAuth.authStateChanges();
   User? get currentUser => _firebaseAuth.currentUser;
 
+  Future<void> signInWithApple() async {
+    if (kIsWeb ||
+        (defaultTargetPlatform != TargetPlatform.iOS &&
+            defaultTargetPlatform != TargetPlatform.macOS)) {
+      throw UnsupportedError('Apple sign in is available on Apple platform builds only.');
+    }
+
+    _log('signInWithApple start platform=${defaultTargetPlatform.name}');
+    final provider = OAuthProvider('apple.com')
+      ..addScope('email')
+      ..addScope('name');
+
+    final credential = await _firebaseAuth.signInWithProvider(provider);
+    _log('signInWithApple firebase success uid=${credential.user?.uid} email=${credential.user?.email}');
+
+    await _syncSignedInUser(
+      credential.user,
+      phoneNumber: credential.user?.phoneNumber,
+    );
+  }
+
   Future<void> signInWithGoogle() async {
     _log('signInWithGoogle start platform=${defaultTargetPlatform.name} isWeb=$kIsWeb');
     late final UserCredential credential;
