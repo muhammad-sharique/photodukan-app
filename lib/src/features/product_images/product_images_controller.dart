@@ -154,6 +154,37 @@ class ProductImagesController extends ChangeNotifier {
     }
   }
 
+  Future<void> updateProductName(String name) async {
+    if (_currentProduct == null) return;
+    final trimmed = name.trim();
+    try {
+      final product = await _repository.updateProductName(
+        _currentProduct!.id,
+        trimmed.isEmpty ? null : trimmed,
+      );
+      _applyProduct(product);
+      _products = await _repository.listProducts();
+      notifyListeners();
+    } catch (error) {
+      _log('updateProductName failed error=$error');
+    }
+  }
+
+  Future<void> updateProductDescription(String description) async {
+    if (_currentProduct == null) return;
+    final trimmed = description.trim();
+    try {
+      final product = await _repository.updateProductDescription(
+        _currentProduct!.id,
+        trimmed.isEmpty ? null : trimmed,
+      );
+      _applyProduct(product);
+      notifyListeners();
+    } catch (error) {
+      _log('updateProductDescription failed error=$error');
+    }
+  }
+
   void clearCurrentProduct() {
     _currentProduct = null;
     _selectedAsset = null;

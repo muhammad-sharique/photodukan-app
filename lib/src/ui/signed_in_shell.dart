@@ -5,9 +5,10 @@ import 'package:image_picker/image_picker.dart';
 import '../features/product_images/product_images_controller.dart';
 import '../features/product_images/models/product_image_models.dart';
 import '../features/product_images/product_images_repository.dart';
-import '../features/product_images/product_images_screen.dart';
+import '../features/product_images/product_screen.dart';
 import '../services/api_client.dart';
 import '../services/auth_repository.dart';
+import 'header_credit_badge.dart';
 
 class SignedInShellPage extends StatefulWidget {
   const SignedInShellPage({
@@ -66,10 +67,8 @@ class _SignedInShellPageState extends State<SignedInShellPage> {
 
     await Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (context) => ProductImagesScreen(
+        builder: (context) => ProductScreen(
           controller: _controller,
-          currentUser: widget.authRepository.currentUser,
-          onSignOut: widget.authRepository.signOut,
         ),
       ),
     );
@@ -380,7 +379,7 @@ class _ShellAppBar extends StatelessWidget implements PreferredSizeWidget {
         Padding(
           padding: const EdgeInsets.only(right: 16),
           child: Center(
-            child: _HeaderCreditBadge(credits: credits),
+            child: HeaderCreditBadge(credits: credits),
           ),
         ),
       ],
@@ -433,26 +432,30 @@ class _ProductsSection extends StatelessWidget {
       );
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: controller.products
-          .map(
-            (product) => Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: _ProductListCard(
-                controller: controller,
-                product: product,
-                onTap: () => onOpenProduct(product.id),
-              ),
-            ),
-          )
-          .toList(),
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        crossAxisSpacing: 8,
+        mainAxisSpacing: 8,
+        childAspectRatio: 1,
+      ),
+      itemCount: controller.products.length,
+      itemBuilder: (context, index) {
+        final product = controller.products[index];
+        return _ProductGridTile(
+          controller: controller,
+          product: product,
+          onTap: () => onOpenProduct(product.id),
+        );
+      },
     );
   }
 }
 
-class _ProductListCard extends StatelessWidget {
-  const _ProductListCard({
+class _ProductGridTile extends StatelessWidget {
+  const _ProductGridTile({
     required this.controller,
     required this.product,
     required this.onTap,
@@ -464,94 +467,23 @@ class _ProductListCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 0,
-      color: Colors.white.withValues(alpha: 0.92),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(16),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(14),
-          child: Row(
-            children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(14),
-                child: SizedBox(
-                  width: 76,
-                  height: 76,
-                  child: product.coverImageUrl == null
-                      ? Container(
-                          color: const Color(0xFFF5EBDD),
-                          alignment: Alignment.center,
-                          child: const Icon(Icons.image_outlined, color: Color(0xFF6A5545)),
-                        )
-                      : Image.network(
-                          controller.resolveImageUrl(product.coverImageUrl!),
-                          headers: controller.imageHeaders,
-                          fit: BoxFit.cover,
-                        ),
-                ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      product.name,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      product.description ?? 'Saved product ready for Premium Background generation.',
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: const Color(0xFF6A5545),
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        _MetricChip(label: '${product.assetCount} photo${product.assetCount == 1 ? '' : 's'}'),
-                        _MetricChip(label: '${product.generationCount} render${product.generationCount == 1 ? '' : 's'}'),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              const Icon(Icons.chevron_right_rounded, color: Color(0xFF6A5545)),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
+    final imageUrl = product.latestAsset?.imageUrl;
 
-class _HeaderCreditBadge extends StatelessWidget {
-  const _HeaderCreditBadge({required this.credits});
-
-  final int? credits;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: Material(
         color: const Color(0xFFF5EBDD),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Text(
-        credits == null ? 'Credits' : '$credits left',
-        style: Theme.of(context).textTheme.labelLarge?.copyWith(
-          color: const Color(0xFF5C4635),
-          fontWeight: FontWeight.w700,
+        child: InkWell(
+          onTap: onTap,
+          child: imageUrl != null
+              ? Image.network(
+                  controller.resolveImageUrl(imageUrl),
+                  headers: controller.imageHeaders,
+                  fit: BoxFit.cover,
+                )
+              : const Center(
+                  child: Icon(Icons.image_outlined, color: Color(0xFF6A5545), size: 32),
+                ),
         ),
       ),
     );
@@ -583,30 +515,6 @@ class _InlineMessageCard extends StatelessWidget {
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-class _MetricChip extends StatelessWidget {
-  const _MetricChip({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF5EBDD),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Text(
-        label,
-        style: Theme.of(context).textTheme.labelLarge?.copyWith(
-          color: const Color(0xFF5C4635),
-          fontWeight: FontWeight.w700,
         ),
       ),
     );

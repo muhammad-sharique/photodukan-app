@@ -100,6 +100,21 @@ class ApiClient {
     return _decodeResponse(response);
   }
 
+  Future<Map<String, dynamic>> patchJsonAuthorized(
+    String path, {
+    required String idToken,
+    required Map<String, dynamic> payload,
+  }) async {
+    final uri = _buildUri(path);
+    _log('patchJsonAuthorized uri=$uri payloadKeys=${payload.keys.join(',')}');
+    final response = await _client.patch(
+      uri,
+      headers: _authorizedHeaders(idToken),
+      body: jsonEncode(payload),
+    );
+    return _decodeResponse(response);
+  }
+
   Future<Map<String, dynamic>> postMultipartAuthorized(
     String path, {
     required String idToken,

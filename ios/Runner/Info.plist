@@ -28,6 +28,8 @@
 	<true/>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>PhotoDukan needs photo library access so you can upload product images for AI generation.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>PhotoDukan needs access to save generated product images to your photo library.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>PhotoDukan needs camera access so you can capture product images for AI generation.</string>
 	<key>UIApplicationSceneManifest</key>

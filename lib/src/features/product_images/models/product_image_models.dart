@@ -93,6 +93,7 @@ class ProductImageGeneration {
 class ProductSummary {
   const ProductSummary({
     required this.id,
+    required this.uid,
     required this.name,
     required this.description,
     required this.coverImageUrl,
@@ -107,13 +108,14 @@ class ProductSummary {
   factory ProductSummary.fromMap(Map<String, dynamic> json) {
     return ProductSummary(
       id: (json['id'] as num).toInt(),
-      name: json['name']?.toString() ?? 'Untitled product',
+      uid: json['uid']?.toString(),
+      name: json['name']?.toString(),
       description: json['description']?.toString(),
       coverImageUrl: json['coverImageUrl']?.toString(),
       assetCount: (json['assetCount'] as num?)?.toInt() ?? 0,
       generationCount: (json['generationCount'] as num?)?.toInt() ?? 0,
-      latestAsset: json['latestAsset'] is Map<String, dynamic>
-          ? ProductImageAsset.fromMap(json['latestAsset'] as Map<String, dynamic>)
+      latestAsset: json['coverAsset'] is Map<String, dynamic>
+          ? ProductImageAsset.fromMap(json['coverAsset'] as Map<String, dynamic>)
           : null,
       latestGeneration: json['latestGeneration'] is Map<String, dynamic>
           ? ProductImageGeneration.fromMap(json['latestGeneration'] as Map<String, dynamic>)
@@ -124,7 +126,8 @@ class ProductSummary {
   }
 
   final int id;
-  final String name;
+  final String? uid;
+  final String? name;
   final String? description;
   final String? coverImageUrl;
   final int assetCount;
@@ -138,6 +141,7 @@ class ProductSummary {
 class ProductDetail extends ProductSummary {
   const ProductDetail({
     required super.id,
+    required super.uid,
     required super.name,
     required super.description,
     required super.coverImageUrl,
@@ -158,6 +162,7 @@ class ProductDetail extends ProductSummary {
 
     return ProductDetail(
       id: summary.id,
+      uid: summary.uid,
       name: summary.name,
       description: summary.description,
       coverImageUrl: summary.coverImageUrl,

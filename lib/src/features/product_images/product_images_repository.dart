@@ -26,11 +26,22 @@ class ProductImagesRepository {
   final ApiClient _apiClient;
   final IdTokenLoader _loadIdToken;
 
+  Future<T> _withRetry<T>(Future<T> Function(String token) fn) async {
+    try {
+      return await fn(await _loadIdToken());
+    } on ApiException catch (e) {
+      if (e.statusCode == 401) {
+        return await fn(await _loadIdToken(forceRefresh: true));
+      }
+      rethrow;
+    }
+  }
+
   Future<List<ProductImageStyleOption>> fetchStyles() async {
-    final response = await _apiClient.getJsonAuthorized(
+    final response = await _withRetry((token) => _apiClient.getJsonAuthorized(
       '/product-images/styles',
-      idToken: await _loadIdToken(),
-    );
+      idToken: token,
+    ));
     final data = response['data'] as Map<String, dynamic>;
     final descriptions = data['descriptions'] as Map<String, dynamic>? ?? const {};
     final styles = (data['styles'] as List<dynamic>? ?? const []);
@@ -45,19 +56,19 @@ class ProductImagesRepository {
   }
 
   Future<CreditSummary> fetchCredits() async {
-    final response = await _apiClient.getJsonAuthorized(
+    final response = await _withRetry((token) => _apiClient.getJsonAuthorized(
       '/product-images/credits',
-      idToken: await _loadIdToken(),
-    );
+      idToken: token,
+    ));
 
     return CreditSummary.fromMap(response['data'] as Map<String, dynamic>);
   }
 
   Future<List<ProductSummary>> listProducts() async {
-    final response = await _apiClient.getJsonAuthorized(
+    final response = await _withRetry((token) => _apiClient.getJsonAuthorized(
       '/product-images/products',
-      idToken: await _loadIdToken(),
-    );
+      idToken: token,
+    ));
 
     final items = response['data'] as List<dynamic>? ?? const [];
     return items
@@ -67,19 +78,42 @@ class ProductImagesRepository {
   }
 
   Future<ProductDetail> getProduct(int productId) async {
-    final response = await _apiClient.getJsonAuthorized(
+    final response = await _withRetry((token) => _apiClient.getJsonAuthorized(
       '/product-images/products/$productId',
-      idToken: await _loadIdToken(),
-    );
+      idToken: token,
+    ));
+
+    return ProductDetail.fromMap(response['data'] as Map<String, dynamic>);
+  }
+
+  Future<ProductDetail> updateProductName(int productId, String? name) async {
+    final response = await _withRetry((token) => _apiClient.patchJsonAuthorized(
+      '/product-images/products/$productId',
+      idToken: token,
+      payload: {'name': name},
+    ));
+
+    return ProductDetail.fromMap(response['data'] as Map<String, dynamic>);
+  }
+
+  Future<ProductDetail> updateProductDescription(
+    int productId,
+    String? description,
+  ) async {
+    final response = await _withRetry((token) => _apiClient.patchJsonAuthorized(
+      '/product-images/products/$productId',
+      idToken: token,
+      payload: {'description': description},
+    ));
 
     return ProductDetail.fromMap(response['data'] as Map<String, dynamic>);
   }
 
   Future<ProductDetail> createProductFromUpload(XFile file, {String? name}) async {
     final upload = await _prepareUpload(file);
-    final response = await _apiClient.postMultipartAuthorized(
+    final response = await _withRetry((token) => _apiClient.postMultipartAuthorized(
       '/product-images/products',
-      idToken: await _loadIdToken(),
+      idToken: token,
       fields: {
         if (name != null && name.trim().isNotEmpty) 'name': name.trim(),
       },
@@ -91,16 +125,16 @@ class ProductImagesRepository {
           contentType: upload.contentType,
         ),
       ],
-    );
+    ));
 
     return ProductDetail.fromMap(response['data'] as Map<String, dynamic>);
   }
 
   Future<ProductImageAsset> uploadAsset(XFile file) async {
     final upload = await _prepareUpload(file);
-    final response = await _apiClient.postMultipartAuthorized(
+    final response = await _withRetry((token) => _apiClient.postMultipartAuthorized(
       '/product-images/assets',
-      idToken: await _loadIdToken(),
+      idToken: token,
       files: [
         ApiMultipartFile(
           fieldName: 'image',
@@ -109,7 +143,7 @@ class ProductImagesRepository {
           contentType: upload.contentType,
         ),
       ],
-    );
+    ));
 
     return ProductImageAsset.fromMap(response['data'] as Map<String, dynamic>);
   }
@@ -127,11 +161,11 @@ class ProductImagesRepository {
       payload['productId'] = productId;
     }
 
-    final response = await _apiClient.postJsonAuthorized(
+    final response = await _withRetry((token) => _apiClient.postJsonAuthorized(
       '/product-images/generations',
-      idToken: await _loadIdToken(),
+      idToken: token,
       payload: payload,
-    );
+    ));
 
     return ProductImageGeneration.fromMap(response['data'] as Map<String, dynamic>);
   }
@@ -147,11 +181,11 @@ class ProductImagesRepository {
       queryParameters['productId'] = '$productId';
     }
 
-    final response = await _apiClient.getJsonAuthorized(
+    final response = await _withRetry((token) => _apiClient.getJsonAuthorized(
       '/product-images/generations',
-      idToken: await _loadIdToken(),
+      idToken: token,
       queryParameters: queryParameters,
-    );
+    ));
 
     final items = response['data'] as List<dynamic>? ?? const [];
     return items
@@ -161,7 +195,7 @@ class ProductImagesRepository {
   }
 
   Future<Map<String, String>> buildImageHeaders() async {
-    final token = await _loadIdToken();
+    final token = await _loadIdToken(forceRefresh: true);
     return {
       'Authorization': 'Bearer $token',
     };

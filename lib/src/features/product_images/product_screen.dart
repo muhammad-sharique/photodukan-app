@@ -1,8 +1,10 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../ui/header_credit_badge.dart';
+import '../../ui/full_screen_image_viewer.dart';
 import 'product_images_controller.dart';
+import 'professional_photoshoot_screen.dart';
 
 Future<void> _pickProductPhoto(
   BuildContext context,
@@ -21,91 +23,57 @@ Future<void> _pickProductPhoto(
   await controller.pickAndUploadPhotoFrom(source);
 }
 
-class ProductImagesScreen extends StatelessWidget {
-  const ProductImagesScreen({
+class ProductScreen extends StatelessWidget {
+  const ProductScreen({
     super.key,
     required this.controller,
-    required this.currentUser,
-    required this.onSignOut,
   });
 
   final ProductImagesController controller;
-  final User? currentUser;
-  final Future<void> Function() onSignOut;
 
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
       animation: controller,
       builder: (context, child) {
-        final canGenerate = controller.canGenerate;
-        final primaryLabel = controller.selectedAsset == null
-            ? (controller.isUploading ? 'Creating product...' : 'Choose product photo')
-            : (controller.isGenerating ? 'Generating image...' : 'Generate style');
-
         return Scaffold(
           appBar: _ProductEditorAppBar(
             controller: controller,
-            currentUser: currentUser,
-            onSignOut: onSignOut,
           ),
-          body: Column(
+          body: ListView(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
             children: [
-              Expanded(
-                child: ListView(
-                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
-                  children: [
-                    _HeroCard(controller: controller),
-                    if (controller.errorMessage != null) ...[
-                      const SizedBox(height: 16),
-                      _ErrorCard(message: controller.errorMessage!),
-                    ],
-                    const SizedBox(height: 16),
-                    _PhotoSection(controller: controller),
-                    const SizedBox(height: 16),
-                    _StyleSection(controller: controller),
-                    const SizedBox(height: 16),
-                    _ResultSection(controller: controller),
-                    if (controller.recentGenerations.isNotEmpty) ...[
-                      const SizedBox(height: 16),
-                      _RecentSection(controller: controller),
-                    ],
-                  ],
+              if (controller.errorMessage != null) ...[
+                const SizedBox(height: 8),
+                _ErrorCard(message: controller.errorMessage!),
+              ],
+              const SizedBox(height: 12),
+              _TitleField(controller: controller),
+              const SizedBox(height: 12),
+              _PhotoSection(controller: controller),
+              if (controller.currentProduct?.description?.isNotEmpty == true) ...[
+                const SizedBox(height: 8),
+                _DescriptionToggle(
+                  controller: controller,
+                ),
+              ],
+              const SizedBox(height: 28),
+              Text(
+                'My Tools',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w700,
                 ),
               ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
-                child: SizedBox(
-                  width: double.infinity,
-                  child: FilledButton.icon(
-                    onPressed: controller.isBusy
-                        ? null
-                        : controller.selectedAsset == null
-                          ? () => _pickProductPhoto(context, controller)
-                            : (canGenerate ? controller.generateCurrentStyle : null),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: const Color(0xFF1F1A17),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 18),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(22),
-                      ),
+              const SizedBox(height: 12),
+              _ToolCard(
+                title: 'Professional Photoshoot',
+                description:
+                    'Create professional images for your product to use on e-commerce and marketing',
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => ProfessionalPhotoshootScreen(
+                      controller: controller,
                     ),
-                    icon: controller.isBusy
-                        ? const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          )
-                        : Icon(
-                            controller.selectedAsset == null
-                                ? Icons.photo_library_rounded
-                                : Icons.auto_awesome_rounded,
-                          ),
-                    label: Text(primaryLabel),
                   ),
                 ),
               ),
@@ -120,209 +88,394 @@ class ProductImagesScreen extends StatelessWidget {
 class _ProductEditorAppBar extends StatelessWidget implements PreferredSizeWidget {
   const _ProductEditorAppBar({
     required this.controller,
-    required this.currentUser,
-    required this.onSignOut,
   });
 
   final ProductImagesController controller;
-  final User? currentUser;
-  final Future<void> Function() onSignOut;
 
   @override
-  Size get preferredSize => const Size.fromHeight(kToolbarHeight + 10);
+  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
 
   @override
   Widget build(BuildContext context) {
-    final label = currentUser?.displayName ?? currentUser?.email ?? 'PhotoDukan';
     final credits = controller.credits?.balance;
-    final title = controller.currentProduct?.name ?? 'Product';
+    final title = controller.currentProduct?.name?.trim().isNotEmpty == true
+        ? controller.currentProduct!.name!
+        : 'View Product';
 
     return AppBar(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       surfaceTintColor: Colors.transparent,
       scrolledUnderElevation: 0,
-      titleSpacing: 20,
-      title: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            title,
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            label,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: const Color(0xFF6A5545),
-            ),
-          ),
-        ],
+      titleSpacing: 8,
+      title: Text(
+        title,
+        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+          fontWeight: FontWeight.w700,
+        ),
       ),
       actions: [
         Padding(
-          padding: const EdgeInsets.symmetric(vertical: 12),
+          padding: const EdgeInsets.only(right: 16),
           child: Center(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF5EBDD),
-                borderRadius: BorderRadius.circular(999),
-              ),
-              child: Text(
-                credits == null ? 'Credits' : '$credits left',
-                style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: const Color(0xFF5C4635),
-                ),
-              ),
-            ),
+            child: HeaderCreditBadge(credits: credits),
           ),
-        ),
-        PopupMenuButton<String>(
-          onSelected: (value) {
-            if (value == 'logout') {
-              onSignOut();
-            }
-          },
-          itemBuilder: (context) => const [
-            PopupMenuItem<String>(
-              value: 'logout',
-              child: Text('Logout'),
-            ),
-          ],
         ),
       ],
     );
   }
 }
 
-class _HeroCard extends StatelessWidget {
-  const _HeroCard({required this.controller});
+class _TitleField extends StatefulWidget {
+  const _TitleField({required this.controller});
 
   final ProductImagesController controller;
 
   @override
-  Widget build(BuildContext context) {
-    final productName = controller.currentProduct?.name;
-    final isWorking = controller.isUploading || controller.isGenerating;
-    final title = productName ?? 'Premium Background';
-    final subtitle = productName == null
-        ? 'Choose a product photo, pick a style, and generate a marketplace-ready result.'
-        : 'Use Premium Background to create a new marketplace-ready version of this product.';
+  State<_TitleField> createState() => _TitleFieldState();
+}
 
-    return Card(
-      elevation: 0,
-      color: Colors.white.withValues(alpha: 0.92),
-      child: Padding(
-        padding: const EdgeInsets.all(18),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF5EBDD),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: const Icon(
-                  Icons.auto_awesome_rounded,
-                  color: Color(0xFF5C4635),
-                ),
-              ),
-              title: Text(
-                title,
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              subtitle: Padding(
-                padding: const EdgeInsets.only(top: 4),
-                child: Text(
-                  subtitle,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: const Color(0xFF6A5545),
-                    height: 1.35,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                _SummaryChip(
-                  icon: Icons.tune_rounded,
-                  label: 'Premium Background',
-                ),
-                _SummaryChip(
-                  icon: Icons.palette_outlined,
-                  label: '${controller.styles.length} styles',
-                ),
-                const _SummaryChip(
-                  icon: Icons.account_balance_wallet_outlined,
-                  label: '1 credit / render',
-                ),
-              ],
-            ),
-            if (isWorking) ...[
-              const SizedBox(height: 16),
-              LinearProgressIndicator(
-                minHeight: 4,
-                borderRadius: BorderRadius.circular(999),
-                backgroundColor: const Color(0xFFF0E3D5),
-                color: Theme.of(context).colorScheme.primary,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                controller.isUploading
-                    ? 'Creating product and preparing the source image.'
-                    : 'Generating the selected background style.',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: const Color(0xFF6A5545),
-                ),
-              ),
-            ],
-          ],
+class _TitleFieldState extends State<_TitleField> {
+  late final TextEditingController _textController;
+  late final FocusNode _focusNode;
+
+  @override
+  void initState() {
+    super.initState();
+    _textController = TextEditingController(
+      text: widget.controller.currentProduct?.name ?? '',
+    );
+    _focusNode = FocusNode();
+    _focusNode.addListener(_onFocusChange);
+  }
+
+  @override
+  void didUpdateWidget(_TitleField oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Sync if the product changed externally (but not while editing)
+    if (!_focusNode.hasFocus) {
+      final newName = widget.controller.currentProduct?.name ?? '';
+      if (_textController.text != newName) {
+        _textController.text = newName;
+      }
+    }
+  }
+
+  void _onFocusChange() {
+    if (!_focusNode.hasFocus) {
+      _submit();
+    }
+  }
+
+  void _submit() {
+    widget.controller.updateProductName(_textController.text);
+  }
+
+  @override
+  void dispose() {
+    _focusNode.removeListener(_onFocusChange);
+    _focusNode.dispose();
+    _textController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return TextField(
+      controller: _textController,
+      focusNode: _focusNode,
+      onEditingComplete: () {
+        _submit();
+        _focusNode.unfocus();
+      },
+      maxLines: 1,
+      textInputAction: TextInputAction.done,
+      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+        fontWeight: FontWeight.w700,
+        color: const Color(0xFF1F1A17),
+      ),
+      decoration: InputDecoration(
+        hintText: 'Add title',
+        hintStyle: Theme.of(context).textTheme.titleLarge?.copyWith(
+          fontWeight: FontWeight.w700,
+          color: const Color(0xFFBCAFA6),
         ),
+        border: InputBorder.none,
+        enabledBorder: InputBorder.none,
+        focusedBorder: UnderlineInputBorder(
+          borderSide: BorderSide(
+            color: const Color(0xFF5C4635).withOpacity(0.4),
+            width: 1.5,
+          ),
+        ),
+        isDense: true,
+        contentPadding: const EdgeInsets.symmetric(vertical: 4),
       ),
     );
   }
 }
 
-class _SummaryChip extends StatelessWidget {
-  const _SummaryChip({required this.icon, required this.label});
+class _DescriptionToggle extends StatefulWidget {
+  const _DescriptionToggle({required this.controller});
 
-  final IconData icon;
-  final String label;
+  final ProductImagesController controller;
+
+  @override
+  State<_DescriptionToggle> createState() => _DescriptionToggleState();
+}
+
+class _DescriptionToggleState extends State<_DescriptionToggle> {
+  bool _expanded = false;
+  late final TextEditingController _textController;
+  late final FocusNode _focusNode;
+
+  @override
+  void initState() {
+    super.initState();
+    _textController = TextEditingController(
+      text: widget.controller.currentProduct?.description ?? '',
+    );
+    _focusNode = FocusNode();
+    _focusNode.addListener(_onFocusChange);
+  }
+
+  @override
+  void didUpdateWidget(_DescriptionToggle oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!_focusNode.hasFocus) {
+      final newDesc = widget.controller.currentProduct?.description ?? '';
+      if (_textController.text != newDesc) {
+        _textController.text = newDesc;
+      }
+    }
+  }
+
+  void _onFocusChange() {
+    if (!_focusNode.hasFocus) {
+      widget.controller.updateProductDescription(_textController.text);
+    }
+  }
+
+  @override
+  void dispose() {
+    _focusNode.removeListener(_onFocusChange);
+    _focusNode.dispose();
+    _textController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF7EFE6),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 18, color: const Color(0xFF5C4635)),
-          const SizedBox(width: 6),
-          Text(
-            label,
-            style: Theme.of(context).textTheme.labelLarge?.copyWith(
-              color: const Color(0xFF5C4635),
-              fontWeight: FontWeight.w600,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        GestureDetector(
+          onTap: () => setState(() => _expanded = !_expanded),
+          behavior: HitTestBehavior.opaque,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 6),
+            child: Row(
+              children: [
+                Text(
+                  'Description',
+                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                    color: const Color(0xFF6A5545),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Icon(
+                  _expanded
+                      ? Icons.keyboard_arrow_up_rounded
+                      : Icons.keyboard_arrow_down_rounded,
+                  size: 18,
+                  color: const Color(0xFF6A5545),
+                ),
+                if (_expanded) ...[
+                  const SizedBox(width: 6),
+                  Text(
+                    'Tap to Edit',
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: const Color(0xFFBCAFA6),
+                    ),
+                  ),
+                ],
+              ],
             ),
           ),
-        ],
+        ),
+        if (_expanded)
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxHeight: 260),
+            child: TextField(
+              controller: _textController,
+              focusNode: _focusNode,
+              maxLines: null,
+              minLines: 3,
+              textInputAction: TextInputAction.newline,
+              keyboardType: TextInputType.multiline,
+              onTapOutside: (_) => _focusNode.unfocus(),
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: const Color(0xFF6A5545),
+                height: 1.6,
+              ),
+              decoration: InputDecoration(
+                hintText: 'Write a description...',
+                hintStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: const Color(0xFFBCAFA6),
+                  height: 1.6,
+                ),
+                border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
+                isDense: true,
+                contentPadding: const EdgeInsets.only(bottom: 8),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _ToolCard extends StatelessWidget {
+  const _ToolCard({
+    required this.title,
+    required this.description,
+    required this.onTap,
+  });
+
+  final String title;
+  final String description;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(24),
+      child: Material(
+        color: Colors.white.withValues(alpha: 0.9),
+        child: InkWell(
+          onTap: onTap,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Demo preview
+              Container(
+                height: 140,
+                width: double.infinity,
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [Color(0xFFEDE0CC), Color(0xFFD3B89C)],
+                  ),
+                ),
+                child: Stack(
+                  children: [
+                    // Simulated product silhouette
+                    Positioned(
+                      right: 32,
+                      top: 16,
+                      child: Container(
+                        width: 76,
+                        height: 96,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.7),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: const Icon(
+                          Icons.shopping_bag_rounded,
+                          color: Color(0xFFBCA18B),
+                          size: 38,
+                        ),
+                      ),
+                    ),
+                    // Shadow beneath product
+                    Positioned(
+                      right: 42,
+                      bottom: 16,
+                      child: Container(
+                        width: 56,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFBCA18B).withValues(alpha: 0.28),
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                      ),
+                    ),
+                    // AI badge
+                    Positioned(
+                      left: 16,
+                      top: 16,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.88),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.auto_awesome_rounded,
+                                size: 13, color: Color(0xFFB85C38)),
+                            const SizedBox(width: 4),
+                            Text(
+                              'AI',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .labelSmall
+                                  ?.copyWith(
+                                    fontWeight: FontWeight.w700,
+                                    color: const Color(0xFFB85C38),
+                                  ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // Text row
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            title,
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleMedium
+                                ?.copyWith(fontWeight: FontWeight.w700),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            description,
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodySmall
+                                ?.copyWith(
+                                  color: const Color(0xFF6A5545),
+                                  height: 1.4,
+                                ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    const Icon(Icons.arrow_forward_rounded,
+                        color: Color(0xFF6A5545)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -369,31 +522,37 @@ class _PhotoSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final asset = controller.selectedAsset;
-    final productName = controller.currentProduct?.name;
 
-    return _SectionCard(
-      title: '1. Product photo',
-      subtitle: asset == null
-          ? 'Choose a clean product image from your gallery or camera.'
-          : productName == null
-              ? 'This source photo stays available while you try different styles.'
-              : 'Original photo for $productName. You can generate multiple looks from this same product.',
-      action: null,
-      child: asset == null
-          ? OutlinedButton.icon(
-            onPressed: controller.isBusy ? null : () => _showPhotoSourcePicker(context),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: const Color(0xFF5C4635),
-                padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 18),
-                side: const BorderSide(color: Color(0xFFD3B79D)),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(24),
-                ),
-              ),
-              icon: const Icon(Icons.add_photo_alternate_outlined),
-              label: const Text('Choose photo'),
-            )
-          : ClipRRect(
+    if (asset == null) {
+      return OutlinedButton.icon(
+        onPressed: controller.isBusy ? null : () => _pickProductPhoto(context, controller),
+        style: OutlinedButton.styleFrom(
+          foregroundColor: const Color(0xFF5C4635),
+          minimumSize: const Size.fromHeight(64),
+          padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 18),
+          side: const BorderSide(color: Color(0xFFD3B79D)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
+        ),
+        icon: const Icon(Icons.add_photo_alternate_outlined),
+        label: const Text('Choose photo'),
+      );
+    }
+
+    return Stack(
+      alignment: Alignment.bottomRight,
+      children: [
+        GestureDetector(
+          onTap: () => openFullScreenImage(
+            context,
+            imageUrl: controller.resolveImageUrl(asset.imageUrl),
+            headers: controller.imageHeaders,
+            heroTag: 'product_asset_${asset.id}',
+          ),
+          child: Hero(
+            tag: 'product_asset_${asset.id}',
+            child: ClipRRect(
               borderRadius: BorderRadius.circular(24),
               child: AspectRatio(
                 aspectRatio: 1,
@@ -404,11 +563,40 @@ class _PhotoSection extends StatelessWidget {
                 ),
               ),
             ),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.all(12),
+          child: GestureDetector(
+            onTap: controller.isBusy
+                ? null
+                : () => _pickProductPhoto(context, controller),
+            child: Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.55),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.edit_rounded,
+                      color: Colors.white, size: 13),
+                  const SizedBox(width: 5),
+                  Text(
+                    'Change',
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          color: Colors.white,
+                        ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
     );
-  }
-
-  Future<void> _showPhotoSourcePicker(BuildContext context) {
-    return _pickProductPhoto(context, controller);
   }
 }
 
@@ -445,7 +633,7 @@ class _PhotoSourceSheet extends StatelessWidget {
             ),
             const SizedBox(height: 6),
             Text(
-              'Use your camera or choose an existing photo. Unsupported formats will be converted automatically when possible.',
+              'Use your camera or choose an existing photo.',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: const Color(0xFF6A5545),
                 height: 1.4,
